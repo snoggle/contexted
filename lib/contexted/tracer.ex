@@ -45,7 +45,7 @@ defmodule Contexted.Tracer do
     beam_folder = get_beam_files_folder_path()
 
     silence_recompilation_warnings(fn ->
-      Kernel.ParallelCompiler.compile_to_path(file_paths, beam_folder)
+      compile_to_path(file_paths, beam_folder)
     end)
 
     {status, diagnostics}
@@ -132,6 +132,16 @@ defmodule Contexted.Tracer do
     after
       Logger.configure(level: original_logger_level)
       Code.compiler_options(original_compiler_options)
+    end
+  end
+
+  @spec compile_to_path(list(String.t()), String.t()) :: any()
+  defp compile_to_path(file_paths, beam_folder) do
+    if Version.compare(System.version(), "1.19.0") != :lt and
+         function_exported?(Kernel.ParallelCompiler, :compile_to_path, 3) do
+      Kernel.ParallelCompiler.compile_to_path(file_paths, beam_folder, return_diagnostics: true)
+    else
+      Kernel.ParallelCompiler.compile_to_path(file_paths, beam_folder)
     end
   end
 end
